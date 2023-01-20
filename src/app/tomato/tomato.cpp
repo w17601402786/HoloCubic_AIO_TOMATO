@@ -41,8 +41,8 @@ static int tomato_init(AppController *sys)
     // 初始化运行时参数
     run_data = (TomatoAppRunData *)calloc(1, sizeof(TomatoAppRunData));
     run_data->time_start = millis();
-    run_data->t_start.second = 5; //专注时间，初始化一次
-    run_data->t_start.minute = 0;
+    run_data->t_start.second = 0; //专注时间，初始化一次
+    run_data->t_start.minute = 25;
     run_data->t = run_data->t_start;
     run_data->rgb_fast = 0;
     run_data->rgb_fast_update = 0;
@@ -123,23 +123,30 @@ static void rgb_ctrl()
     // Serial.println("     rgb_fast_update");
     if (run_data->rgb_fast_update == 0)
     {
+
+        uint8_t mode1;
+
+
         if (run_data->rgb_fast == 1)
         {
             run_data->rgb_cfg.time = 10;
             
             run_data->rgb_cfg.min_value_0 = 1;
-            run_data->rgb_cfg.min_value_1 = 32;
-            run_data->rgb_cfg.min_value_2 = 255;
+            run_data->rgb_cfg.min_value_1 = 1;
+            run_data->rgb_cfg.min_value_2 = 1;
             run_data->rgb_cfg.max_value_0 = 255;
-            run_data->rgb_cfg.max_value_1 = 10;
-            run_data->rgb_cfg.max_value_2 = 40;
+            run_data->rgb_cfg.max_value_1 = 2;
+            run_data->rgb_cfg.max_value_2 = 2;
             run_data->rgb_cfg.min_brightness = 0.01;
             run_data->rgb_cfg.brightness_step = 0.05;
-            run_data->rgb_cfg.max_brightness = 0.95;
-            run_data->rgb_cfg.step_0 = 0;
+            run_data->rgb_cfg.max_brightness = 1;
+
+            //是否启用当前光
+            run_data->rgb_cfg.step_0 = 1;
             run_data->rgb_cfg.step_1 = 0;
             run_data->rgb_cfg.step_2 = 0;
             //  Serial.println("set fast");
+            mode1 = LED_MODE_RGB;
         }
         else
         {
@@ -158,8 +165,12 @@ static void rgb_ctrl()
             run_data->rgb_cfg.max_brightness = 0.25;
             run_data->rgb_cfg.brightness_step = 0.001;
             run_data->rgb_cfg.time = 50;
+
+            mode1 = LED_MODE_HSV;
         }
-        run_data->rgb_setting = {LED_MODE_HSV,
+
+
+        run_data->rgb_setting = {mode1,
                                  run_data->rgb_cfg.min_value_0, run_data->rgb_cfg.min_value_1, run_data->rgb_cfg.min_value_2,
                                  run_data->rgb_cfg.max_value_0, run_data->rgb_cfg.max_value_1, run_data->rgb_cfg.max_value_2,
                                  run_data->rgb_cfg.step_0, run_data->rgb_cfg.step_1, run_data->rgb_cfg.step_2,
@@ -215,7 +226,7 @@ static void tomato_process(AppController *sys,
         static int  last_mode;
         run_data->switch_count <<= 2;
         run_data->switch_count |= 3;//写11并移位
-        if (run_data->switch_count > 0x2f)//只有连续的触发才进行切换
+        if (run_data->switch_count > 0x9f)//只有连续的触发才进行切换
         {
             if (TURN_LEFT == act_info->active)
             {
