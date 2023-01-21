@@ -31,26 +31,30 @@ MyMQTT::MyMQTT(const char * sid, const char * password, MQTT_CALLBACK_SIGNATURE)
 
 void MyMQTT::loop() {
 
+    //内存再套循环太卡了
     if(!this->client.connected()){
 
 
         Serial.println("连接失败");
 
-        while (!client.connected())
-        {
-            if(client.connect(clientId,mqttUser,mqttPassword)){
-                Serial.println("connected");
-            }else{
-                Serial.println("fail:");
-                Serial.print(client.state());
-                delay(6000);
-            }
+        if(client.connect(clientId,mqttUser,mqttPassword)){
+            Serial.println("connected");
+            boolean result = this->client.subscribe(topic_Commands);
+            Serial.println(topic_Commands);
+            Serial.println(result == 1 ? "订阅成功" : "订阅失败");
+            this->client.loop();
+        }else{
+            Serial.println("fail:");
+            Serial.print(client.state());
+            delay(6000);
         }
-
-
-        boolean result = this->client.subscribe(topic_Commands);
-        Serial.println(topic_Commands);
-        Serial.println(result == 1 ? "订阅成功" : "订阅失败");
     }
-    this->client.loop();
+}
+
+boolean MyMQTT::sendPropertiesReport(char *payload) {
+
+    //发送当前设备的某些属性
+
+
+    return 0;
 }

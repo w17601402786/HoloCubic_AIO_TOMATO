@@ -37,8 +37,9 @@ MyMQTT *myMqtt;
 void response(char *topic, char *responseName, uint8_t result);
 void set_mod(int mood);
 void mqtt_callback(char *topic, byte *payload, unsigned int length);
+void update_MQTT(void *pVoid);
 
-
+int timout_cnt = 0;
 
 void TaskLvglUpdate(void *parameter)
 {
@@ -228,6 +229,19 @@ void setup()
 
     myMqtt = new MyMQTT(app_controller->sys_cfg.ssid_0.c_str(),app_controller->sys_cfg.password_0.c_str(),mqtt_callback);
 
+
+    //开辟多线程来进行更新mqtt
+    xTaskCreate(update_MQTT,"mqtt",10000,NULL,1,NULL);
+
+}
+
+
+void update_MQTT(void *pVoid){
+    while (true){
+        Serial.println("update_MQTT");
+        myMqtt->loop();
+        delay(10000);
+    }
 }
 
 void loop()
@@ -247,8 +261,9 @@ void loop()
         }
     }
 #endif
-    
-    myMqtt->loop();
+
+
+
     
     if (isCheckAction)
     {
