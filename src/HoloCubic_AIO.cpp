@@ -16,9 +16,13 @@
 #include "sys/app_controller.h"
 #include "app/app_conf.h"
 
+
+
 #include <SPIFFS.h>
 #include <esp32-hal.h>
 #include <esp32-hal-timer.h>
+
+#include "MyMQTT.h"
 
 static bool isCheckAction = false;
 
@@ -27,6 +31,14 @@ ImuAction *act_info;           // 存放mpu6050返回的数据
 AppController *app_controller; // APP控制器
 
 TaskHandle_t handleTaskLvgl;
+
+MyMQTT *myMqtt;
+
+void response(char *topic, char *responseName, uint8_t result);
+void set_mod(int mood);
+void mqtt_callback(char *topic, byte *payload, unsigned int length);
+
+
 
 void TaskLvglUpdate(void *parameter)
 {
@@ -212,6 +224,10 @@ void setup()
                                 200 / portTICK_PERIOD_MS,
                                 pdTRUE, (void *)0, actionCheckHandle);
     xTimerStart(xTimerAction, 0);
+
+
+    myMqtt = new MyMQTT(app_controller->sys_cfg.ssid_0.c_str(),app_controller->sys_cfg.password_0.c_str(),mqtt_callback);
+
 }
 
 void loop()
@@ -231,6 +247,9 @@ void loop()
         }
     }
 #endif
+    
+    myMqtt->loop();
+    
     if (isCheckAction)
     {
         isCheckAction = false;
@@ -239,4 +258,98 @@ void loop()
     app_controller->main_process(act_info); // 运行当前进程
     // Serial.println(ambLight.getLux() / 50.0);
     // rgb.setBrightness(ambLight.getLux() / 500.0);
+
 }
+
+
+
+
+void mqtt_callback(char *topic, byte *payload, unsigned int length){
+
+
+    //从topic中获取request_id，以=分割
+    char *request_id = strtok(topic,"=");
+    request_id = strtok(nullptr,"=");
+
+
+    payload[length] = '\0';
+
+    String strPayload((const char *)payload);
+
+
+    //使用ArduinoJson解析数据
+    DynamicJsonDocument doc(strPayload.length() * 2);
+    DeserializationError error = deserializeJson(doc, strPayload);
+    if (error) {
+        Serial.print(F("deserializeJson() failed: "));
+        Serial.println(error.c_str());
+        return;
+    }
+
+
+    //获取命令名称
+    const char* commandName = doc["command_name"].as<const char *>();
+
+    if (strcmp(commandName,"send_mood") == 0) {
+        int nowMood = doc["paras"]["now_mood"].as<int>();
+        Serial.println(nowMood);
+        set_mod(nowMood);
+    }
+
+
+    //获取回复命令的接口
+    char *response_topic = new char[255];
+    strcpy(response_topic,topic_Commands_Response);
+    strcat(response_topic,request_id);
+
+    //回复命令
+    response(response_topic,"change",SUCCESS);
+
+}
+
+
+void set_mod(int mood) {
+
+    Serial.println("进入set_mod");
+
+}
+
+void response(char *topic, char *responseName, uint8_t result) {
+    /*发送命令响应部分*/
+    /*构建JSON内容*/
+    DynamicJsonDocument doc(1024);
+
+    if(result == SUCCESS){
+        doc["result_code"] = 0;
+
+        //构建子JSON
+        JsonObject paras = doc.createNestedObject("paras");
+
+        paras["status"] = 200;
+        paras["msg"] = "success";
+    }
+    else if(result == FAIL){
+        doc["result_code"] = 1;
+        JsonObject paras = doc.createNestedObject("paras");
+        paras["status"] = 400;
+        paras["msg"] = "fail";
+    }
+
+    doc["response_name"] = responseName;
+
+
+
+    String strResponse;
+    serializeJson(doc,strResponse);
+
+
+    if (myMqtt->client.publish(topic, strResponse.c_str())) {
+        Serial.println("Success sending response command message");
+    } else {
+        Serial.println("Error sending response command message");
+    }
+
+
+
+}
+
