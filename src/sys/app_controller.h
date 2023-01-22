@@ -41,6 +41,9 @@ public:
     void init(void);
     void Display(void); // 显示接口
     int app_auto_start();
+
+    //通过其他类启动该应用
+    int app_start(const char *app_name);
     // 将APP注册到app_controller中
     int app_install(APP_OBJ *app,
                     APP_TYPE app_type = APP_TYPE_REAL_TIME);
@@ -67,11 +70,12 @@ public:
     void write_config(RgbConfig *cfg);
 
 private:
-    APP_OBJ *getAppByName(const char *name);
     int getAppIdxByName(const char *name);
     int app_is_legal(const APP_OBJ *app_obj);
 
 private:
+
+    APP_OBJ *getAppByName(const char *name);
     char name[APP_CONTROLLER_NAME_LEN]; // app控制器的名字
     APP_OBJ *appList[APP_MAX_NUM];      // 预留APP_MAX_NUM个APP注册位
     APP_TYPE appTypeList[APP_MAX_NUM];  // 对应APP的运行类型

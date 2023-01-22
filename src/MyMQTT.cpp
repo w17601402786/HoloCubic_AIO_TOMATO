@@ -19,7 +19,7 @@ MyMQTT::MyMQTT(const char * sid, const char * password, MQTT_CALLBACK_SIGNATURE)
     this->client.setServer(mqttServer,mqttPort);
 
     client.setCallback(callback);
-    client.setKeepAlive(60);
+//    client.setKeepAlive(60);
 
     Serial.println("尝试开始链接。。。");
 
@@ -42,13 +42,14 @@ void MyMQTT::loop() {
             boolean result = this->client.subscribe(topic_Commands);
             Serial.println(topic_Commands);
             Serial.println(result == 1 ? "订阅成功" : "订阅失败");
-            this->client.loop();
         }else{
             Serial.println("fail:");
             Serial.print(client.state());
-            delay(6000);
+//            delay(6000);
         }
     }
+    this->client.loop();
+    delay(5000);
 }
 
 boolean MyMQTT::sendPropertiesReport(char *payload) {

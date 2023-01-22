@@ -116,5 +116,11 @@
 #include "app/tomato/tomato.h"
 #endif
 
+// 心情APP
+#define APP_MOOD_USE 1
+#if APP_MOOD_USE
+#include "app/mood/mood.h"
+#endif
+
 
 #endif

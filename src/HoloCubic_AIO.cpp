@@ -35,7 +35,7 @@ TaskHandle_t handleTaskLvgl;
 MyMQTT *myMqtt;
 
 void response(char *topic, char *responseName, uint8_t result);
-void set_mod(int mood);
+void set_mood(int mood);
 void mqtt_callback(char *topic, byte *payload, unsigned int length);
 void update_MQTT(void *pVoid);
 
@@ -193,6 +193,10 @@ void setup()
     app_controller->app_install(&pc_resource_app);
 #endif
 
+#if APP_MOOD_USE
+    app_controller->app_install(&mood_app);
+#endif
+
     // 自启动APP
     app_controller->app_auto_start();
 
@@ -227,7 +231,6 @@ void setup()
     xTimerStart(xTimerAction, 0);
 
 
-    myMqtt = new MyMQTT(app_controller->sys_cfg.ssid_0.c_str(),app_controller->sys_cfg.password_0.c_str(),mqtt_callback);
 
 
     //开辟多线程来进行更新mqtt
@@ -237,10 +240,10 @@ void setup()
 
 
 void update_MQTT(void *pVoid){
+    myMqtt = new MyMQTT(app_controller->sys_cfg.ssid_0.c_str(),app_controller->sys_cfg.password_0.c_str(),mqtt_callback);
+
     while (true){
-        Serial.println("update_MQTT");
         myMqtt->loop();
-        delay(10000);
     }
 }
 
@@ -308,7 +311,7 @@ void mqtt_callback(char *topic, byte *payload, unsigned int length){
     if (strcmp(commandName,"send_mood") == 0) {
         int nowMood = doc["paras"]["now_mood"].as<int>();
         Serial.println(nowMood);
-        set_mod(nowMood);
+        set_mood(nowMood);
     }
 
 
@@ -322,10 +325,21 @@ void mqtt_callback(char *topic, byte *payload, unsigned int length){
 
 }
 
+/**
+ * set_mood函数主要功能为在mqtt回调函数中调用，
+ * 用来唤醒mood_app
+ * @param mood
+ */
+void set_mood(int mood) {
 
-void set_mod(int mood) {
+    Serial.println(mood);
 
-    Serial.println("进入set_mod");
+    app_controller->sys_cfg.current_mood = mood;
+
+#include "app/mood/mood.h"
+
+
+    app_controller->app_start(MOOD_APP_NAME);
 
 }
 

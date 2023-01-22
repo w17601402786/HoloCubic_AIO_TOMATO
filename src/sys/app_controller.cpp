@@ -443,3 +443,27 @@ void AppController::app_exit()
     Serial.print(F("CpuFrequencyMhz: "));
     Serial.println(getCpuFrequencyMhz());
 }
+
+int AppController::app_start(const char *app_name) {
+
+
+    //退出原先的app
+
+//    this->app_exit();
+
+    // APP自启动
+    int index = this->getAppIdxByName(app_name);
+    if (index < 0)
+    {
+        // 没找到相关的APP
+        return -1;
+    }
+    // 进入自启动的APP
+    app_exit_flag = 1; // 进入app, 如果已经在
+
+    //因为是后台程序，这就不用退出了
+    cur_app_index = index;
+    (*(appList[cur_app_index]->app_init))(this); // 执行APP初始化
+
+    return 0;
+}
