@@ -232,6 +232,11 @@ void setup()
 
 
 
+//    g_network.open_ap(AP_SSID);
+
+
+
+
     //开辟多线程来进行更新mqtt
     xTaskCreate(update_MQTT,"mqtt",10000,NULL,1,NULL);
 
@@ -240,7 +245,7 @@ void setup()
 
 void update_MQTT(void *pVoid){
     myMqtt = new MyMQTT(app_controller->sys_cfg.ssid_0.c_str(),app_controller->sys_cfg.password_0.c_str(),mqtt_callback);
-    app_controller->set_wifi_status(true);
+
 
     while (true){
         myMqtt->loop();

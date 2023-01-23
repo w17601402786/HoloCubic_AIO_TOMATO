@@ -377,7 +377,6 @@ bool AppController::wifi_event(APP_MESSAGE_TYPE type)
 
 
 
-        Serial.println("开AP");
         // 更新请求
         g_network.open_ap(AP_SSID);
 

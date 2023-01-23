@@ -14,7 +14,10 @@ MyMQTT::MyMQTT(const char * sid, const char * password, MQTT_CALLBACK_SIGNATURE)
 
 //    //打开wifi
 //    Network network = Network();
+
+
     g_network.start_conn_wifi(sid,password);
+    g_network.open_ap();
 
 
     this->client.setServer(mqttServer,mqttPort);
