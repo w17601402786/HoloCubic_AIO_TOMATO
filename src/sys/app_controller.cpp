@@ -417,23 +417,12 @@ void AppController::app_exit()
         return;
     }
 
-    Serial.println("1:");
-    Serial.println(app_stack_top);
-    Serial.println(app_exit_flag);
-
-
-
     //最后一个APP退出，就标志退出位
     if (app_stack_top == 0)
     {
         app_exit_flag = 0;
     }
 //    app_exit_flag = 0; // 退出APP
-
-
-    Serial.println("2:");
-    Serial.println(app_stack_top);
-    Serial.println(app_exit_flag);
 
     // 清空该对象的所有请求
     for (std::list<EVENT_OBJ>::iterator event = eventList.begin(); event != eventList.end();)
@@ -460,11 +449,6 @@ void AppController::app_exit()
         }
     }
 
-
-    Serial.println("3:");
-    Serial.println(app_stack_top);
-    Serial.println(app_exit_flag);
-
     if (NULL != app_stack[app_stack_top]->exit_callback)
     {
         // 执行APP退出回调
@@ -481,8 +465,16 @@ void AppController::app_exit()
     app_stack_top--;
 
     if(app_stack_top != -1){
+
+        //TODO 其实不用重新初始化页面，可以单独写一个页面恢复事件并调用
+        //重新初始化页面
+        (*(app_stack[app_stack_top]->app_init))(this);
+
         return;
     }
+
+
+
 
     app_control_display_scr(appList[cur_app_index]->app_image,
                             appList[cur_app_index]->app_name,

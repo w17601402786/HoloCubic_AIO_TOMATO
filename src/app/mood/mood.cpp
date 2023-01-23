@@ -47,6 +47,12 @@ AppController *appController = NULL;
 // 释放播放器对象
 static void release_player_decoder()
 {
+
+    //关闭并释放文件
+    if(run_data->mood_file){
+        run_data->mood_file.close();
+    }
+
     if (run_data->player_decoder)
     {
         delete run_data->player_decoder;
@@ -59,6 +65,9 @@ static void release_player_decoder()
 
 static int mood_init(AppController *sys)
 {
+    lv_obj_t *act_obj = lv_scr_act();
+    lv_obj_clean(act_obj); // 清空此前页面
+
 
     Serial.println("进入心情模式");
 
