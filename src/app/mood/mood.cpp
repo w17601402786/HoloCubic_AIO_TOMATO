@@ -35,10 +35,14 @@ struct MoodAppRunData
     char *mood_file_path;
     char *file_name;
     File mood_file;
+    //上一个mood标志位;
+    int pre_index = -1;
 };
 
 // 保存APP运行时的参数信息，理论上关闭APP时推荐在 xxx_exit_callback 中释放掉
 static MoodAppRunData *run_data = NULL;
+AppController *appController = NULL;
+
 
 // 释放播放器对象
 static void release_player_decoder()
@@ -56,8 +60,9 @@ static void release_player_decoder()
 static int mood_init(AppController *sys)
 {
 
-
     Serial.println("进入心情模式");
+
+    appController = sys;
 
     // 调整RGB模式  HSV色彩模式
     RgbParam rgb_setting = {LED_MODE_HSV, 0, 128, 32,
@@ -67,22 +72,46 @@ static int mood_init(AppController *sys)
     set_rgb_and_run(&rgb_setting);
 
     run_data = (MoodAppRunData *)calloc(1, sizeof(MoodAppRunData));
-    run_data->mood_index = sys->sys_cfg.current_mood;
+
+    //申请内存
+    run_data->file_name = (char *)calloc(1, 256);
+    run_data->mood_file_path = (char *)calloc(1, 256);
+    run_data->player_decoder = NULL;
+    run_data->mood_index = appController->sys_cfg.current_mood;
+    run_data->pre_index = run_data->mood_index;
+
+
+    setCpuFrequencyMhz(240);
+
+    update_mood();
+
+
+
+//    video_start();
+
+//    // 使用 forever_data 中的变量，任何函数都可以用
+//    Serial.print(forever_data.val1);
+//
+//    // 如果有需要持久化配置文件 可以调用此函数将数据存在flash中
+//    // 配置文件名最好以APP名为开头 以".cfg"结尾，以免多个APP读取混乱
+//    char info[128] = {0};
+//    uint16_t size = g_flashCfg.readFile("/example.cfg", (uint8_t *)info);
+//    // 解析数据
+//    // 将配置数据保存在文件中（持久化）
+//    g_flashCfg.writeFile("/example.cfg", "value1=100\nvalue2=200");
+    
+    return 0;
+}
+
+
+//更新心情
+static int update_mood(){
 
     //防止越界
     if (run_data->mood_index < 0 || run_data->mood_index >= MOOD_MAX)
     {
         return -1;
     }
-
-
-    run_data->player_decoder = NULL;
-
-
-
-    //申请内存
-    run_data->file_name = (char *)calloc(1, 256);
-    run_data->mood_file_path = (char *)calloc(1, 256);
 
     strcpy(run_data->file_name,mood_file_name[run_data->mood_index]);
 
@@ -101,30 +130,22 @@ static int mood_init(AppController *sys)
         return -1;
     }
 
+
+    video_start();
     Serial.println(run_data->mood_file.name());
     Serial.println(run_data->mood_file.size());
 
-
-    setCpuFrequencyMhz(240);
-
-    video_start();
-
-//    // 使用 forever_data 中的变量，任何函数都可以用
-//    Serial.print(forever_data.val1);
-//
-//    // 如果有需要持久化配置文件 可以调用此函数将数据存在flash中
-//    // 配置文件名最好以APP名为开头 以".cfg"结尾，以免多个APP读取混乱
-//    char info[128] = {0};
-//    uint16_t size = g_flashCfg.readFile("/example.cfg", (uint8_t *)info);
-//    // 解析数据
-//    // 将配置数据保存在文件中（持久化）
-//    g_flashCfg.writeFile("/example.cfg", "value1=100\nvalue2=200");
-    
     return 0;
+
 }
 
 
 static void video_start(){
+
+
+    if(run_data->player_decoder!=NULL){
+        free(run_data->player_decoder);
+    }
 
     if(NULL != strstr(run_data->file_name,".mjpeg")){
         run_data->player_decoder = new MjpegPlayDocoder(&run_data->mood_file, true);
@@ -146,6 +167,17 @@ static void mood_process(AppController *sys,
         sys->app_exit(); // 退出APP
         return;
     }
+
+
+    run_data->mood_index = appController->sys_cfg.current_mood;
+
+    //发现变化，开始更新心情
+    if (run_data->mood_index != run_data->pre_index){
+        update_mood();
+        run_data->pre_index = run_data->mood_index;
+    }
+
+
 
 //    // 主频控制 为了降低发热量,如果卡顿可以注释掉
 //    if (getCpuFrequencyMhz() > 80)
@@ -214,6 +246,9 @@ static int mood_exit_callback(void *param)
         free(run_data);
         run_data = NULL;
     }
+
+    Serial.println("成功释放资源！！！");
+
     return 0;
 }
 

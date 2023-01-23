@@ -29,8 +29,9 @@ AppController::AppController(const char *name)
     app_num = 0;
     app_exit_flag = 0;
     cur_app_index = 0;
-    pre_app_index = 0;
+//    pre_app_index = 0;
     // appList = new APP_OBJ[APP_MAX_NUM];
+    app_stack_top = -1;
     m_wifi_status = false;
     m_preWifiReqMillis = GET_SYS_MILLIS();
 
@@ -74,6 +75,9 @@ void AppController::Display()
     app_control_display_scr(appList[cur_app_index]->app_image,
                             appList[cur_app_index]->app_name,
                             LV_SCR_LOAD_ANIM_NONE, true);
+
+
+
 }
 
 AppController::~AppController()
@@ -119,6 +123,8 @@ int AppController::app_uninstall(const APP_OBJ *app)
     return 0;
 }
 
+
+
 int AppController::app_auto_start()
 {
     // APP自启动
@@ -163,14 +169,14 @@ int AppController::main_process(ImuAction *act_info)
         if (ACTIVE_TYPE::TURN_LEFT == act_info->active)
         {
             anim_type = LV_SCR_LOAD_ANIM_MOVE_RIGHT;
-            pre_app_index = cur_app_index;
+//            pre_app_index = cur_app_index;
             cur_app_index = (cur_app_index + 1) % app_num;
             Serial.println(String("Current App: ") + appList[cur_app_index]->app_name);
         }
         else if (ACTIVE_TYPE::TURN_RIGHT == act_info->active)
         {
             anim_type = LV_SCR_LOAD_ANIM_MOVE_LEFT;
-            pre_app_index = cur_app_index;
+//            pre_app_index = cur_app_index;
             // 以下等效与 processId = (processId - 1 + APP_NUM) % 4;
             // +3为了不让数据溢出成负数，而导致取模逻辑错误
             cur_app_index = (cur_app_index - 1 + app_num) % app_num; // 此处的3与p_processList的长度一致
@@ -178,11 +184,12 @@ int AppController::main_process(ImuAction *act_info)
         }
         else if (ACTIVE_TYPE::GO_FORWORD == act_info->active)
         {
-            app_exit_flag = 1; // 进入app
-            if (NULL != appList[cur_app_index]->app_init)
-            {
-                (*(appList[cur_app_index]->app_init))(this); // 执行APP初始化
-            }
+            app_start(cur_app_index);
+//            app_exit_flag = 1; // 进入app
+//            if (NULL != appList[cur_app_index]->app_init)
+//            {
+//                (*(appList[cur_app_index]->app_init))(this); // 执行APP初始化
+//            }
         }
 
         if (ACTIVE_TYPE::GO_FORWORD != act_info->active) // && UNKNOWN != act_info->active
@@ -195,11 +202,17 @@ int AppController::main_process(ImuAction *act_info)
     }
     else
     {
-        app_control_display_scr(appList[cur_app_index]->app_image,
-                                    appList[cur_app_index]->app_name,
-                                    LV_SCR_LOAD_ANIM_NONE, false);
+        //不用加载图标了，浪费CPU时间，会很卡顿
+//        app_control_display_scr(appList[cur_app_index]->app_image,
+//                                    appList[cur_app_index]->app_name,
+//                                    LV_SCR_LOAD_ANIM_NONE, false);
         // 运行APP进程 等效于把控制权交给当前APP
-        (*(appList[cur_app_index]->main_process))(this, act_info);
+//        (*(appList[cur_app_index]->main_process))(this, act_info);
+
+
+
+        //只运行栈顶进程
+        (*(app_stack[app_stack_top]->main_process))(this, act_info);
     }
     act_info->active = ACTIVE_TYPE::UNKNOWN;
     act_info->isValid = 0;
@@ -397,12 +410,47 @@ bool AppController::wifi_event(APP_MESSAGE_TYPE type)
 
 void AppController::app_exit()
 {
-    app_exit_flag = 0; // 退出APP
+
+    if (app_stack_top < 0)
+    {
+        // APP栈为空
+        return;
+    }
+
+    Serial.println("1:");
+    Serial.println(app_stack_top);
+    Serial.println(app_exit_flag);
+
+
+
+    //最后一个APP退出，就标志退出位
+    if (app_stack_top == 0)
+    {
+        app_exit_flag = 0;
+    }
+//    app_exit_flag = 0; // 退出APP
+
+
+    Serial.println("2:");
+    Serial.println(app_stack_top);
+    Serial.println(app_exit_flag);
 
     // 清空该对象的所有请求
     for (std::list<EVENT_OBJ>::iterator event = eventList.begin(); event != eventList.end();)
     {
-        if (appList[cur_app_index] == (*event).from)
+
+
+//        if (appList[cur_app_index] == (*event).from)
+//        {
+//            event = eventList.erase(event); // 删除该响应事件
+//        }
+//        else
+//        {
+//            ++event;
+//        }
+
+
+        if (app_stack[app_stack_top] == (*event).from)
         {
             event = eventList.erase(event); // 删除该响应事件
         }
@@ -412,14 +460,35 @@ void AppController::app_exit()
         }
     }
 
-    if (NULL != appList[cur_app_index]->exit_callback)
+
+    Serial.println("3:");
+    Serial.println(app_stack_top);
+    Serial.println(app_exit_flag);
+
+    if (NULL != app_stack[app_stack_top]->exit_callback)
     {
         // 执行APP退出回调
-        (*(appList[cur_app_index]->exit_callback))(NULL);
+        (*(app_stack[app_stack_top]->exit_callback))(NULL);
     }
+
+    Serial.println("4:");
+    Serial.println(app_stack_top);
+    Serial.println(app_exit_flag);
+
+    //如果不是最后一个app，就不执行下面的操作
+
+    //将控制权交给前一个APP
+    app_stack_top--;
+
+    if(app_stack_top != -1){
+        return;
+    }
+
     app_control_display_scr(appList[cur_app_index]->app_image,
                             appList[cur_app_index]->app_name,
                             LV_SCR_LOAD_ANIM_NONE, true);
+
+
 
     // 恢复RGB灯  HSV色彩模式
     RgbConfig *cfg = &rgb_cfg;
@@ -444,12 +513,10 @@ void AppController::app_exit()
     Serial.println(getCpuFrequencyMhz());
 }
 
+
+
+
 int AppController::app_start(const char *app_name) {
-
-
-    //退出原先的app
-
-//    this->app_exit();
 
     // APP自启动
     int index = this->getAppIdxByName(app_name);
@@ -458,12 +525,68 @@ int AppController::app_start(const char *app_name) {
         // 没找到相关的APP
         return -1;
     }
-    // 进入自启动的APP
-    app_exit_flag = 1; // 进入app, 如果已经在
 
-    //因为是后台程序，这就不用退出了
-    cur_app_index = index;
-    (*(appList[cur_app_index]->app_init))(this); // 执行APP初始化
+    app_start(index);
+    return 0;
+}
+
+int AppController::app_start(int index) {
+
+    //如果是第一个APP，就标志启动位
+
+    if (app_stack_top == -1){
+        app_exit_flag = 1;
+    }
+
+
+    //如果启动的是同一个app，那就不执行任何操作
+    if(app_stack[app_stack_top] == appList[index]){
+        //是同一个应用
+        return -1;
+    }
+
+//    app_exit_flag = 1; // 进入app, 如果已经在
+
+
+    if (app_stack_top >= APP_STACK_SIZE)
+    {
+
+
+
+        // APP栈溢出
+        return -1;
+    }
+
+    //将当前app的对象指针存进app栈中
+    app_stack[++app_stack_top] = appList[index];
+
+//    //因为是后台程序，这就不用退出了
+//    cur_app_index = index;
+
+    (*(app_stack[app_stack_top]->app_init))(this); // 执行APP初始化
+
+    return 0;
+}
+
+
+
+int AppController::top_app_exit() {
+
+    if (app_stack_top < 0)
+    {
+        // APP栈为空
+        return -1;
+    }
+
+    //最后一个APP退出，就标志退出位
+    if (app_stack_top == 0)
+    {
+        app_exit_flag = 0;
+    }
+
+
+    //退出当前app
+    (*(app_stack[app_stack_top--]->exit_callback))(NULL);
 
     return 0;
 }

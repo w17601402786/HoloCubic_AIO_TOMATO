@@ -13,6 +13,8 @@
 #define MQTT_ALIVE_CYCLE 1000      // mqtt重连周期
 #define EVENT_LIST_MAX_LENGTH 10   // 消息队列的容量
 #define APP_CONTROLLER_NAME_LEN 16 // app控制器的名字长度
+#define APP_STACK_SIZE 10        // app的栈大小
+
 
 // struct EVENT_OBJ
 // {
@@ -42,8 +44,19 @@ public:
     void Display(void); // 显示接口
     int app_auto_start();
 
-    //通过其他类启动该应用
+    //通过名字获取app，并启动app，实际上会调用下面一个方法
     int app_start(const char *app_name);
+    //真正的启动应用，通过下标启动
+    int app_start(int index);
+
+
+    /**
+     * 退出栈顶APP
+     * 后来发现直接修改app_exit更方便，所以废弃了
+     * @deprecated
+     */
+    int top_app_exit();
+
     // 将APP注册到app_controller中
     int app_install(APP_OBJ *app,
                     APP_TYPE app_type = APP_TYPE_REAL_TIME);
@@ -85,8 +98,12 @@ private:
     unsigned long m_preWifiReqMillis; // 保存上一回请求的时间戳
     unsigned int app_num;
     boolean app_exit_flag; // 表示是否退出APP应用
+
     int cur_app_index;     // 当前运行的APP下标
-    int pre_app_index;     // 上一次运行的APP下标
+
+    //进程栈，用来保存当前运行的APP，建议深度别太大，否则会导致栈溢出
+    APP_OBJ *app_stack[APP_MAX_NUM];
+    int app_stack_top; // 栈顶指针
 
     TimerHandle_t xTimerEventDeal; // 事件处理定时器
 

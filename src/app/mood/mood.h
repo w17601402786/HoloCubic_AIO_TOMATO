@@ -12,6 +12,7 @@ extern APP_OBJ mood_app;
 static void video_start();
 //释放播放器对象
 static void release_player_decoder();
-
+//更新心情
+static int update_mood();
 
 #endif

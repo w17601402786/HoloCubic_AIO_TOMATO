@@ -273,6 +273,8 @@ static void UpdateTime_RTC(long long timestamp)
 
 static int weather_init(AppController *sys)
 {
+
+
     tft->setSwapBytes(true);
     weather_gui_init();
     // 获取配置信息
