@@ -75,9 +75,6 @@ void AppController::Display()
     app_control_display_scr(appList[cur_app_index]->app_image,
                             appList[cur_app_index]->app_name,
                             LV_SCR_LOAD_ANIM_NONE, true);
-
-
-
 }
 
 AppController::~AppController()
@@ -455,10 +452,6 @@ void AppController::app_exit()
         (*(app_stack[app_stack_top]->exit_callback))(NULL);
     }
 
-    Serial.println("4:");
-    Serial.println(app_stack_top);
-    Serial.println(app_exit_flag);
-
     //如果不是最后一个app，就不执行下面的操作
 
     //将控制权交给前一个APP
@@ -466,9 +459,14 @@ void AppController::app_exit()
 
     if(app_stack_top != -1){
 
-        //TODO 其实不用重新初始化页面，可以单独写一个页面恢复事件并调用
-        //重新初始化页面
-        (*(app_stack[app_stack_top]->app_init))(this);
+        Serial.println("开始唤起activate事件");
+
+        if((app_stack[app_stack_top]->activate)!=NULL){
+
+            //重新激活当前应用程序所需要执行的操作
+            (*(app_stack[app_stack_top]->activate))(this);
+        }
+        Serial.println("结束唤起activate事件");
 
         return;
     }
@@ -542,12 +540,22 @@ int AppController::app_start(int index) {
 
     if (app_stack_top >= APP_STACK_SIZE)
     {
-
-
-
         // APP栈溢出
         return -1;
     }
+
+
+    //首次启动需谨慎
+    if ( app_stack_top != -1 && (app_stack[app_stack_top]->suspend) != NULL){
+
+
+        Serial.println("开始唤起suspend事件");
+        //挂起当前应用要执行的操作
+        (*(app_stack[app_stack_top]->suspend))(this);
+        Serial.println("结束唤起suspend事件");
+    }
+
+
 
     //将当前app的对象指针存进app栈中
     app_stack[++app_stack_top] = appList[index];

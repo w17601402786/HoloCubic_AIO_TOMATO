@@ -65,9 +65,6 @@ static void release_player_decoder()
 
 static int mood_init(AppController *sys)
 {
-    lv_obj_t *act_obj = lv_scr_act();
-    lv_obj_clean(act_obj); // 清空此前页面
-
 
     Serial.println("进入心情模式");
 
@@ -182,6 +179,10 @@ static void mood_process(AppController *sys,
 
     //发现变化，开始更新心情
     if (run_data->mood_index != run_data->pre_index){
+
+        //释放原先的播放器对象，防止出现内存溢出导致卡死
+        release_player_decoder();
+
         update_mood();
         run_data->pre_index = run_data->mood_index;
     }

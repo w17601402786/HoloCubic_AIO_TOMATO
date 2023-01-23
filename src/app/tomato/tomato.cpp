@@ -314,4 +314,4 @@ static void tomato_background_task(AppController *sys,
 
 APP_OBJ tomato_app = {TOMATO_APP_NAME, &app_tomato_icon, "Author Fjl\nVersion 1.0.0\n",
                         tomato_init, tomato_process,tomato_background_task,
-                        tomato_exit_callback, tomato_message_handle};
+                        tomato_exit_callback, tomato_message_handle,NULL,NULL};

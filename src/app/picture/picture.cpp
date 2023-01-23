@@ -255,6 +255,18 @@ static void picture_message_handle(const char *from, const char *to,
     }
 }
 
+int picture_suspend(AppController *sys){
+
+    photo_gui_del();
+    return 0;
+}
+
+int picture_activate(AppController *sys){
+    photo_gui_init();
+    return 0;
+}
+
+
 APP_OBJ picture_app = {PICTURE_APP_NAME, &app_picture, "",
                        picture_init, picture_process, picture_background_task,
                        picture_exit_callback, picture_message_handle};
