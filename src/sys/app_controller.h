@@ -81,6 +81,7 @@ public:
     void write_config(SysMpuConfig *cfg);
     void read_config(RgbConfig *cfg);
     void write_config(RgbConfig *cfg);
+    void set_wifi_status(boolean status);
 
 private:
     int getAppIdxByName(const char *name);

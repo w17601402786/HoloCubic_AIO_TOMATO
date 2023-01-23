@@ -288,6 +288,8 @@ int AppController::req_event_deal(void)
     // 请求事件的处理
     for (std::list<EVENT_OBJ>::iterator event = eventList.begin(); event != eventList.end();)
     {
+
+
         if ((*event).nextRunTime > GET_SYS_MILLIS())
         {
             ++event;
@@ -301,6 +303,10 @@ int AppController::req_event_deal(void)
             (*event).retryCount += 1;
             if ((*event).retryCount >= (*event).retryMaxNum)
             {
+
+
+                Serial.println("尝试事件");
+
                 // 多次重试失败
                 Serial.print("[EVENT]\tDelete -> " + String(app_event_type_info[(*event).type]));
                 event = eventList.erase(event); // 删除该响应事件
@@ -316,16 +322,27 @@ int AppController::req_event_deal(void)
             continue;
         }
 
+
+
         // 事件回调
         if (NULL != (*event).from && NULL != (*event).from->message_handle)
         {
+
+
+            Serial.println("事件回调");
             (*((*event).from->message_handle))(CTRL_NAME, (*event).from->app_name,
                                                (*event).type, (*event).info, NULL);
         }
+
+        Serial.println("完成事件1");
+
         Serial.print("[EVENT]\tDelete -> " + String(app_event_type_info[(*event).type]));
         event = eventList.erase(event); // 删除该响应完成的事件
         Serial.print(F("\tEventList Size: "));
         Serial.println(eventList.size());
+
+
+
     }
     return 0;
 }
@@ -357,8 +374,15 @@ bool AppController::wifi_event(APP_MESSAGE_TYPE type)
     break;
     case APP_MESSAGE_WIFI_AP:
     {
+
+
+
+        Serial.println("开AP");
         // 更新请求
         g_network.open_ap(AP_SSID);
+
+        Serial.println("kai成功");
+
         m_wifi_status = true;
         m_preWifiReqMillis = GET_SYS_MILLIS();
     }
@@ -589,4 +613,8 @@ int AppController::top_app_exit() {
     (*(app_stack[app_stack_top--]->exit_callback))(NULL);
 
     return 0;
+}
+
+void AppController::set_wifi_status(boolean status) {
+    m_wifi_status = status;
 }

@@ -3,6 +3,7 @@
 //
 #include "MyMQTT.h"
 #include "network.h"
+#include "common.h"
 // #include<sys/app_controller.h>
 
 
@@ -11,9 +12,9 @@ MyMQTT::MyMQTT(const char * sid, const char * password, MQTT_CALLBACK_SIGNATURE)
     wiFiClient = WiFiClient();
     client = PubSubClient(wiFiClient);
 
-    //打开wifi
-    Network network = Network();
-    network.start_conn_wifi(sid,password);
+//    //打开wifi
+//    Network network = Network();
+
 
 
     this->client.setServer(mqttServer,mqttPort);
