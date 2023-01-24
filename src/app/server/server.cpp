@@ -231,6 +231,23 @@ static void server_message_handle(const char *from, const char *to,
     }
 }
 
+static int server_suspend(AppController *sys){
+
+    setting_gui_del();
+
+    return 0;
+}
+
+static int server_activate(AppController *sys){
+
+
+    server_gui_init();
+
+    return 0;
+}
+
+
 APP_OBJ server_app = {SERVER_APP_NAME, &app_server, "",
                       server_init, server_process, server_background_task,
-                      server_exit_callback, server_message_handle};
+                      server_exit_callback, server_message_handle,
+                      server_suspend,server_activate};
