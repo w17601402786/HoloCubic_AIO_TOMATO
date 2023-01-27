@@ -32,7 +32,7 @@ AppController *app_controller; // APP控制器
 
 TaskHandle_t handleTaskLvgl;
 
-MyMQTT *myMqtt;
+//MyMQTT *myMqtt;
 
 void response(char *topic, char *responseName, uint8_t result);
 void set_mood(int mood);
@@ -231,26 +231,12 @@ void setup()
     xTimerStart(xTimerAction, 0);
 
 
+    app_controller->send_to(MOOD_APP_NAME,CTRL_NAME,APP_MESSAGE_WIFI_CONN,NULL,NULL);
 
-//    g_network.open_ap(AP_SSID);
-
-
-
-
-    //开辟多线程来进行更新mqtt
-    xTaskCreate(update_MQTT,"mqtt",10000,NULL,1,NULL);
+    mqtt = new MyMQTT(app_controller,mqtt_callback);
 
 }
 
-
-void update_MQTT(void *pVoid){
-    myMqtt = new MyMQTT(app_controller->sys_cfg.ssid_0.c_str(),app_controller->sys_cfg.password_0.c_str(),mqtt_callback);
-
-
-    while (true){
-        myMqtt->loop();
-    }
-}
 
 void loop()
 {
@@ -271,8 +257,8 @@ void loop()
 #endif
 
 
+    mqtt->loop();
 
-    
     if (isCheckAction)
     {
         isCheckAction = false;
@@ -377,7 +363,7 @@ void response(char *topic, char *responseName, uint8_t result) {
     serializeJson(doc,strResponse);
 
 
-    if (myMqtt->client.publish(topic, strResponse.c_str())) {
+    if (mqtt->client.publish(topic, strResponse.c_str())) {
         Serial.println("Success sending response command message");
     } else {
         Serial.println("Error sending response command message");

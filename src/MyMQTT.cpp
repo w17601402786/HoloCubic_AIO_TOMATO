@@ -3,11 +3,12 @@
 //
 #include "MyMQTT.h"
 #include "network.h"
-#include "common.h"
-// #include<sys/app_controller.h>
+#include<sys/app_controller.h>
+#include "app/mood/mood.h"
 
+MyMQTT *mqtt;
 
-MyMQTT::MyMQTT(const char * sid, const char * password, MQTT_CALLBACK_SIGNATURE) {
+MyMQTT::MyMQTT(AppController *sys,MQTT_CALLBACK_SIGNATURE) {
 
     wiFiClient = WiFiClient();
     client = PubSubClient(wiFiClient);
@@ -15,10 +16,7 @@ MyMQTT::MyMQTT(const char * sid, const char * password, MQTT_CALLBACK_SIGNATURE)
 //    //打开wifi
 //    Network network = Network();
 
-
-    g_network.start_conn_wifi(sid,password);
-    g_network.open_ap();
-
+    this->sys = sys;
 
     this->client.setServer(mqttServer,mqttPort);
 
@@ -27,7 +25,7 @@ MyMQTT::MyMQTT(const char * sid, const char * password, MQTT_CALLBACK_SIGNATURE)
 
     Serial.println("尝试开始链接。。。");
 
-    this->loop();
+//    this->loop();
 
 
 }
@@ -35,25 +33,34 @@ MyMQTT::MyMQTT(const char * sid, const char * password, MQTT_CALLBACK_SIGNATURE)
 
 void MyMQTT::loop() {
 
-    //内存再套循环太卡了
-    if(!this->client.connected()){
 
+    //如果WIFI未连接，就提示控制器更新wifi，并且不再执行后面的代码
+    if(!WiFi.isConnected() && sys->eventList.size()< 3){
 
-        Serial.println("连接失败");
-
-        if(client.connect(clientId,mqttUser,mqttPassword)){
-            Serial.println("connected");
-            boolean result = this->client.subscribe(topic_Commands);
-            Serial.println(topic_Commands);
-            Serial.println(result == 1 ? "订阅成功" : "订阅失败");
-        }else{
-            Serial.println("fail:");
-            Serial.print(client.state());
-//            delay(6000);
-        }
+        //提醒控制器更新wifi
+        this->sys->send_to(MOOD_APP_NAME, CTRL_NAME,
+                           APP_MESSAGE_WIFI_DISCONN,NULL,NULL);
+        this->sys->send_to(MOOD_APP_NAME, CTRL_NAME,
+                           APP_MESSAGE_WIFI_CONN,NULL,NULL);
+        return;
     }
-    this->client.loop();
-    delay(5000);
+
+    //wifi没连接就别更新mqtt了
+    if(!WiFi.isConnected()){
+        return;
+    }
+
+    //内存再套循环太卡了
+    if(WiFi.isConnected() && !this->client.connected() && this->sys->eventList.size() < 3){
+
+        //提醒控制权更新mqtt
+        this->sys->send_to(MOOD_APP_NAME, CTRL_NAME,
+                           APP_MESSAGE_UPDATE_MQTT,NULL,NULL);
+    }
+
+    if (WiFi.isConnected()){
+        this->client.loop();
+    }
 }
 
 boolean MyMQTT::sendPropertiesReport(char *payload) {
@@ -63,3 +70,4 @@ boolean MyMQTT::sendPropertiesReport(char *payload) {
 
     return 0;
 }
+

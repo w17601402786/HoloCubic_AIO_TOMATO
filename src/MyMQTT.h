@@ -43,10 +43,13 @@ private:
 
 public:
 
+    AppController *sys;
     PubSubClient client;
-    MyMQTT(const char *sid, const char *password, std::function<void(char *, uint8_t *, unsigned int)> callback);
+    MyMQTT(AppController *sys,std::function<void(char *, uint8_t *, unsigned int)> callback);
     void loop();
     boolean sendPropertiesReport(char *payload);
 };
+
+extern MyMQTT *mqtt;
 
 

@@ -3,6 +3,7 @@
 #include "common.h"
 #include "interface.h"
 #include "Arduino.h"
+#include "MyMQTT.h"
 
 const char *app_event_type_info[] = {"APP_MESSAGE_WIFI_CONN", "APP_MESSAGE_WIFI_AP",
                                      "APP_MESSAGE_WIFI_ALIVE", "APP_MESSAGE_WIFI_DISCONN",
@@ -218,6 +219,7 @@ int AppController::main_process(ImuAction *act_info)
 
 APP_OBJ *AppController::getAppByName(const char *name)
 {
+
     for (int pos = 0; pos < app_num; ++pos)
     {
         if (!strcmp(name, appList[pos]->app_name))
@@ -247,8 +249,11 @@ int AppController::send_to(const char *from, const char *to,
                            APP_MESSAGE_TYPE type, void *message,
                            void *ext_info)
 {
+
+
     APP_OBJ *fromApp = getAppByName(from); // 来自谁 有可能为空
     APP_OBJ *toApp = getAppByName(to);     // 发送给谁 有可能为空
+
     if (type <= APP_MESSAGE_MQTT_DATA)
     {
         // 更新事件的请求者
@@ -359,10 +364,9 @@ bool AppController::wifi_event(APP_MESSAGE_TYPE type)
     {
         // 更新请求
         // CONN_ERROR == g_network.end_conn_wifi() ||
-        if (false == m_wifi_status)
+        if (!m_wifi_status)
         {
-            g_network.start_conn_wifi(sys_cfg.ssid_0.c_str(), sys_cfg.password_0.c_str());
-            m_wifi_status = true;
+             m_wifi_status = g_network.start_conn_wifi(sys_cfg.ssid_0.c_str(), sys_cfg.password_0.c_str());
         }
         m_preWifiReqMillis = GET_SYS_MILLIS();
         if ((WiFi.getMode() & WIFI_MODE_STA) == WIFI_MODE_STA && CONN_SUCC != g_network.end_conn_wifi())
@@ -375,14 +379,16 @@ bool AppController::wifi_event(APP_MESSAGE_TYPE type)
     case APP_MESSAGE_WIFI_AP:
     {
 
+        //已经开启了AP模式
+        if (m_wifi_ap_status)
+        {
+            break;
+        }
 
 
         // 更新请求
-        g_network.open_ap(AP_SSID);
+        m_wifi_ap_status = g_network.open_ap(AP_SSID);
 
-        Serial.println("kai成功");
-
-        m_wifi_status = true;
         m_preWifiReqMillis = GET_SYS_MILLIS();
     }
     break;
@@ -396,8 +402,14 @@ bool AppController::wifi_event(APP_MESSAGE_TYPE type)
     break;
     case APP_MESSAGE_WIFI_DISCONN:
     {
-        g_network.close_wifi();
-        m_wifi_status = false; // 标志位
+
+        if (!m_wifi_status)
+        {
+            break;
+        }
+
+        // 更新WIFI状态
+        m_wifi_status = !g_network.close_wifi();
         // m_preWifiReqMillis = GET_SYS_MILLIS() - WIFI_LIFE_CYCLE;
     }
     break;
@@ -407,6 +419,7 @@ bool AppController::wifi_event(APP_MESSAGE_TYPE type)
     break;
     case APP_MESSAGE_MQTT_DATA:
     {
+
         Serial.println("APP_MESSAGE_MQTT_DATA");
         if (app_exit_flag == 1 && cur_app_index != getAppIdxByName("Heartbeat")) // 在其他app中
         {
@@ -419,6 +432,27 @@ bool AppController::wifi_event(APP_MESSAGE_TYPE type)
             cur_app_index = getAppIdxByName("Heartbeat");
             (*(getAppByName("Heartbeat")->app_init))(this); // 执行APP初始化
         }
+    }
+    break;
+
+    //更新MQTT连接
+    case APP_MESSAGE_UPDATE_MQTT:{
+
+        if(!WiFi.isConnected()){
+            Serial.println("wifi未连接");
+            break;
+        }
+
+        if(WiFi.isConnected() && mqtt->client.connect(clientId,mqttUser,mqttPassword)){
+            Serial.println("connected");
+            boolean result = mqtt->client.subscribe(topic_Commands);
+            Serial.println(topic_Commands);
+            Serial.println(result == 1 ? "订阅成功" : "订阅失败");
+        }else{
+            Serial.println("fail:");
+            Serial.print(mqtt->client.state());
+        }
+
     }
     break;
     default:
