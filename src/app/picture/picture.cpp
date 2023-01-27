@@ -269,4 +269,5 @@ int picture_activate(AppController *sys){
 
 APP_OBJ picture_app = {PICTURE_APP_NAME, &app_picture, "",
                        picture_init, picture_process, picture_background_task,
-                       picture_exit_callback, picture_message_handle};
+                       picture_exit_callback, picture_message_handle,
+                       picture_suspend,picture_activate};

@@ -39,6 +39,8 @@ void set_mood(int mood);
 void mqtt_callback(char *topic, byte *payload, unsigned int length);
 void update_MQTT(void *pVoid);
 
+void set_notification(String title, String content);
+
 int timout_cnt = 0;
 
 void TaskLvglUpdate(void *parameter)
@@ -303,8 +305,13 @@ void mqtt_callback(char *topic, byte *payload, unsigned int length){
         int nowMood = doc["paras"]["now_mood"].as<int>();
         Serial.println(nowMood);
         set_mood(nowMood);
+    }else if (strcmp(commandName,"send_notification") == 0) {
+        String title = doc["paras"]["title"].as<String>();
+        String content = doc["paras"]["content"].as<String>();
+        Serial.println(title);
+        Serial.println(content);
+        set_notification(title,content);
     }
-
 
     //获取回复命令的接口
     char *response_topic = new char[255];
@@ -316,6 +323,13 @@ void mqtt_callback(char *topic, byte *payload, unsigned int length){
 
 }
 
+void set_notification(String title, String content) {
+    app_controller->sys_cfg.title = title;
+    app_controller->sys_cfg.content = content;
+    //TODO 通知功能，后来感觉不实用，暂时不做
+
+}
+
 /**
  * set_mood函数主要功能为在mqtt回调函数中调用，
  * 用来唤醒mood_app
@@ -323,7 +337,6 @@ void mqtt_callback(char *topic, byte *payload, unsigned int length){
  */
 void set_mood(int mood) {
 
-    Serial.println(mood);
 
     app_controller->sys_cfg.current_mood = mood;
 

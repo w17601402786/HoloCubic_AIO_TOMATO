@@ -92,6 +92,8 @@ struct SysUtilConfig
     uint8_t auto_calibration_mpu; // 是否自动校准陀螺仪 0关闭自动校准 1打开自动校准
     uint8_t mpu_order;            // 操作方向
     uint8_t current_mood;         //当前的心情（只有一个参数，没必要使用文件存储了）
+    String title;                 // 提示标题
+    String content;               // 提示内容
 };
 
 #define GFX 0
