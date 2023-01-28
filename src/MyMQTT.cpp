@@ -63,11 +63,14 @@ void MyMQTT::loop() {
     }
 }
 
-boolean MyMQTT::sendPropertiesReport(char *payload) {
+//boolean MyMQTT::sendPropertiesReport(char *payload) {
+//    return true;
+//}
 
-    //发送当前设备的某些属性
+boolean MyMQTT::help(){
 
-
-    return 0;
+    Serial.println("发送求助");
+    sys->send_to(MOOD_APP_NAME, CTRL_NAME, APP_MESSAGE_HELP, NULL, NULL);
+    return true;
 }
 

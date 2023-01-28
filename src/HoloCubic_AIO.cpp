@@ -17,7 +17,6 @@
 #include "app/app_conf.h"
 
 
-
 #include <SPIFFS.h>
 #include <esp32-hal.h>
 #include <esp32-hal-timer.h>
@@ -236,6 +235,8 @@ void setup()
     app_controller->send_to(MOOD_APP_NAME,CTRL_NAME,APP_MESSAGE_WIFI_CONN,NULL,NULL);
 
     mqtt = new MyMQTT(app_controller,mqtt_callback);
+
+
 
 }
 

@@ -102,11 +102,11 @@ void display_settings(const char *cur_ver, const char *new_ver, lv_scr_load_anim
 {
     display_settings_init();
 
-    lv_label_set_text(title_label, "#00ff00 All\tin\tone#");
+    lv_label_set_text(title_label, "#00ff00 For\tXiao\tChen#");
 
     lv_label_set_text_fmt(cur_ver_label, "Now Version:  #ff0000 %s#", cur_ver);
 
-    lv_label_set_text(qq_label, "AIO QQ: 755143193");
+    lv_label_set_text(qq_label, "XIAO WANG");
 
     if (strcmp(cur_ver, &new_ver[2]) < 0)
     {
@@ -114,7 +114,7 @@ void display_settings(const char *cur_ver, const char *new_ver, lv_scr_load_anim
         lv_obj_align(new_ver_label, LV_ALIGN_CENTER, 0, 60);
     }
 
-    lv_label_set_text(author_label, "@ClimbSnail");
+    lv_label_set_text(author_label, "@XIAOWANG");
 }
 
 void settings_gui_del(void)

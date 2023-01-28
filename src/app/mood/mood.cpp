@@ -12,16 +12,17 @@
 #define VIDEO_HEIGHT 240L
 #define MOOD_PATH "/mood"
 
-#define MOOD_MAX 6
+#define MOOD_MAX 7
 
 //文件名称的字符串数组
-const char *mood_file_name[6] = {
+const char *mood_file_name[7] = {
         "bukaixin.mjpeg",
         "buxie.mjpeg",
         "shangxin.mjpeg",
         "shengqi.mjpeg",
         "tantou.mjpeg",
         "zhenjing.mjpeg",
+        "kaixin.mjpeg"
 };
 
 

@@ -8,6 +8,7 @@ enum APP_MESSAGE_TYPE
     APP_MESSAGE_WIFI_ALIVE,    // wifi开关的心跳维持
     APP_MESSAGE_WIFI_DISCONN,  // 连接断开
     APP_MESSAGE_UPDATE_TIME,
+    APP_MESSAGE_HELP,           // 求助
     APP_MESSAGE_UPDATE_MQTT, // 更新mqtt的配置
     APP_MESSAGE_MQTT_DATA, // MQTT客户端收到消息
     APP_MESSAGE_GET_PARAM, // 获取参数

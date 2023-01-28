@@ -4,7 +4,7 @@
 const char *active_type_info[] = {"TURN_RIGHT", "RETURN",
                                   "TURN_LEFT", "UP",
                                   "DOWN", "GO_FORWORD",
-                                  "SHAKE", "UNKNOWN"};
+                                  "SHAKE","STRONG","HELP", "UNKNOWN"};
 
 IMU::IMU()
 {
@@ -170,8 +170,7 @@ ImuAction *IMU::getAction(void)
     ImuAction tmp_info;
     getVirtureMotion6(&tmp_info);
 
-    // Serial.printf("gx = %d\tgy = %d\tgz = %d", tmp_info.v_gx, tmp_info.v_gy, tmp_info.v_gz);
-    // Serial.printf("\tax = %d\tay = %d\taz = %d\n", tmp_info.v_ax, tmp_info.v_ay, tmp_info.v_az);
+
 
     tmp_info.active = ACTIVE_TYPE::UNKNOWN;
 
@@ -208,6 +207,13 @@ ImuAction *IMU::getAction(void)
             // 震动检测
             tmp_info.active = ACTIVE_TYPE::SHAKE;
         }
+    }
+
+    //计算加速度传感器三个方向的加速度平方和
+    long acc = tmp_info.v_gx * tmp_info.v_gx / 100 + tmp_info.v_gy * tmp_info.v_gy / 100 + tmp_info.v_gz * tmp_info.v_gz / 100;
+    //如果加速度传感器三个方向的加速度平方和大于阈值，则认为是摇晃
+    if(acc > 7000000){
+        tmp_info.active = ACTIVE_TYPE::STRONG;
     }
 
     // 储存当前检测的动作数据到动作缓冲区中
@@ -252,8 +258,22 @@ ImuAction *IMU::getAction(void)
                 act_info_history[second] = ACTIVE_TYPE::UNKNOWN;
                 act_info_history[third] = ACTIVE_TYPE::UNKNOWN;
             }
+
+            //如果连续三次都识别为STRONG，则认为是求救
+            if(act_info_history[index] == ACTIVE_TYPE::STRONG){
+                action_info.isValid = 1;
+                action_info.active = ACTIVE_TYPE::HELP;
+            }
+
+
         }
+
+
+
+
     }
+
+
 
     return &action_info;
 }

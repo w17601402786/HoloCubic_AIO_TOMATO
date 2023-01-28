@@ -34,7 +34,11 @@
 //#define topic_properties_report  "$oc/devices/63ca876f352830580e465fef_holo_chen/sys/messages/up"
 #define topic_Commands_Response "$oc/devices/63ca876f352830580e465fef_holo_chen/sys/commands/response/request_id="
 #define topic_Commands "$oc/devices/63ca876f352830580e465fef_holo_chen/sys/commands/#"
-#define topic_Properties "$oc/devices/63ca876f352830580e465fef_holo_chen/sys/messages/down"
+#define topic_Properties_Down "$oc/devices/63ca876f352830580e465fef_holo_chen/sys/messages/down"
+
+//属性上报topic
+#define topic_Properties_Up "$oc/devices/63ca876f352830580e465fef_holo_chen/sys/messages/up"
+
 
 class MyMQTT{
 private:
@@ -47,7 +51,9 @@ public:
     PubSubClient client;
     MyMQTT(AppController *sys,std::function<void(char *, uint8_t *, unsigned int)> callback);
     void loop();
-    boolean sendPropertiesReport(char *payload);
+//    boolean sendPropertiesReport(char *payload);
+    //求救功能
+    boolean help();
 };
 
 extern MyMQTT *mqtt;

@@ -154,9 +154,6 @@ static void server_process(AppController *sys,
             // "", "",
             LV_SCR_LOAD_ANIM_NONE);
 
-//
-//        sys->send_to(SERVER_APP_NAME,CTRL_NAME,
-//                    APP_MESSAGE_WIFI_CONN,NULL,NULL);
         // 如果web服务没有开启 且 ap开启的请求没有发送 message这边没有作用（填0）
         sys->send_to(SERVER_APP_NAME, CTRL_NAME,
                      APP_MESSAGE_WIFI_AP, NULL, NULL);
@@ -191,6 +188,8 @@ static void server_background_task(AppController *sys,
 
 static int server_exit_callback(void *param)
 {
+
+
     setting_gui_del();
 
     // 释放运行数据
@@ -210,6 +209,8 @@ static void server_message_handle(const char *from, const char *to,
     {
     case APP_MESSAGE_WIFI_AP:
     {
+
+        //判断是否已经开启了AP
         Serial.print(F("APP_MESSAGE_WIFI_AP enable\n"));
         display_setting(
             "WebServer Start",

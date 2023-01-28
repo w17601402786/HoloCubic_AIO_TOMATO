@@ -54,6 +54,9 @@ boolean Network::start_conn_wifi(const char *ssid, const char *password)
         Serial.println(F("\nWiFi is OK.\n"));
         return false;
     }
+
+    WiFi.mode(WIFI_MODE_APSTA);
+
     Serial.println("");
     Serial.print(F("Connecting: "));
     Serial.print(ssid);
@@ -120,12 +123,14 @@ boolean Network::close_wifi(void)
     {
         WiFi.enableAP(false);
         Serial.println(F("AP shutdowm"));
+    }else if(WiFi.getMode() & WIFI_MODE_STA){
+        WiFi.enableSTA(false);
+        Serial.println(F("STA shutdowm"));
     }
     if (!WiFi.disconnect())
     {
         return false;
     }
-    WiFi.enableSTA(false);
     WiFi.mode(WIFI_MODE_NULL);
     // esp_wifi_set_inactive_time(ESP_IF_ETH, 10); //设置暂时休眠时间
     // esp_wifi_get_ant(wifi_ant_config_t * config);                   //获取暂时休眠时间
@@ -137,6 +142,8 @@ boolean Network::close_wifi(void)
 
 boolean Network::open_ap(const char *ap_ssid, const char *ap_password)
 {
+
+    WiFi.mode(WIFI_MODE_APSTA); // 设置为AP+STA模式
 
     WiFi.enableAP(true); // 配置为AP模式
     // 修改主机名

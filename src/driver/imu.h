@@ -21,6 +21,8 @@ enum ACTIVE_TYPE
     DOWN,
     GO_FORWORD,
     SHAKE,
+    STRONG,
+    HELP,
     UNKNOWN
 };
 

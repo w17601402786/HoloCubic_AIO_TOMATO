@@ -34,6 +34,7 @@ AppController::AppController(const char *name)
     // appList = new APP_OBJ[APP_MAX_NUM];
     app_stack_top = -1;
     m_wifi_status = false;
+    m_wifi_ap_status = false;
     m_preWifiReqMillis = GET_SYS_MILLIS();
 
     // 定义一个事件处理定时器
@@ -139,6 +140,8 @@ int AppController::app_auto_start()
     return 0;
 }
 
+
+int cnt = 0;
 int AppController::main_process(ImuAction *act_info)
 {
     if (ACTIVE_TYPE::UNKNOWN != act_info->active)
@@ -146,6 +149,22 @@ int AppController::main_process(ImuAction *act_info)
         Serial.print(F("[Operate]\tact_info->active: "));
         Serial.println(active_type_info[act_info->active]);
     }
+
+    if (ACTIVE_TYPE::HELP == act_info->active)
+    {
+        Serial.println(cnt);
+        cnt++;
+    }else if(ACTIVE_TYPE::UNKNOWN != act_info->active){
+        cnt = 0;
+    }
+
+    if (cnt >= 2)
+    {
+        mqtt->help();
+        cnt = 0;
+    }
+
+
 
     if (isRunEventDeal)
     {
@@ -261,8 +280,13 @@ int AppController::send_to(const char *from, const char *to,
         {
             return 1;
         }
+        uint8_t retry = 3;
+
+        if(type == APP_MESSAGE_HELP){
+            retry = 254;
+        }
         // 发给控制器的消息(目前都是wifi事件)
-        EVENT_OBJ new_event = {fromApp, type, message, 3, 0, 0};
+        EVENT_OBJ new_event = {fromApp, type, message, retry, 0, 0};
         eventList.push_back(new_event);
         Serial.print("[EVENT]\tAdd -> " + String(app_event_type_info[type]));
         Serial.print(F("\tEventList Size: "));
@@ -308,10 +332,6 @@ int AppController::req_event_deal(void)
             (*event).retryCount += 1;
             if ((*event).retryCount >= (*event).retryMaxNum)
             {
-
-
-                Serial.println("尝试事件");
-
                 // 多次重试失败
                 Serial.print("[EVENT]\tDelete -> " + String(app_event_type_info[(*event).type]));
                 event = eventList.erase(event); // 删除该响应事件
@@ -328,26 +348,17 @@ int AppController::req_event_deal(void)
         }
 
 
-
         // 事件回调
         if (NULL != (*event).from && NULL != (*event).from->message_handle)
         {
-
-
-            Serial.println("事件回调");
             (*((*event).from->message_handle))(CTRL_NAME, (*event).from->app_name,
                                                (*event).type, (*event).info, NULL);
         }
-
-        Serial.println("完成事件1");
 
         Serial.print("[EVENT]\tDelete -> " + String(app_event_type_info[(*event).type]));
         event = eventList.erase(event); // 删除该响应完成的事件
         Serial.print(F("\tEventList Size: "));
         Serial.println(eventList.size());
-
-
-
     }
     return 0;
 }
@@ -358,6 +369,10 @@ int AppController::req_event_deal(void)
  * */
 bool AppController::wifi_event(APP_MESSAGE_TYPE type)
 {
+
+    Serial.println("进入iWIFI事件");
+    Serial.println((type == APP_MESSAGE_WIFI_AP ? "AP" : "STA"));
+
     switch (type)
     {
     case APP_MESSAGE_WIFI_CONN:
@@ -382,20 +397,28 @@ bool AppController::wifi_event(APP_MESSAGE_TYPE type)
         //已经开启了AP模式
         if (m_wifi_ap_status)
         {
+            //已经开启了AP模式
+            Serial.println("open ap already");
             break;
         }
 
-
+        Serial.println("open ap。。。。。。。");
         // 更新请求
         m_wifi_ap_status = g_network.open_ap(AP_SSID);
+
+        if(!m_wifi_ap_status)
+        {
+            Serial.println("open ap fail");
+            return false;
+        }
 
         m_preWifiReqMillis = GET_SYS_MILLIS();
     }
     break;
     case APP_MESSAGE_WIFI_ALIVE:
     {
-        // wifi开关的心跳 持续收到心跳 wifi才不会被关闭
-        m_wifi_status = true;
+        // AP开关的心跳 持续收到心跳 AP才不会被关闭
+        m_wifi_ap_status = true;
         // 更新请求
         m_preWifiReqMillis = GET_SYS_MILLIS();
     }
@@ -452,6 +475,42 @@ bool AppController::wifi_event(APP_MESSAGE_TYPE type)
             Serial.println("fail:");
             Serial.print(mqtt->client.state());
         }
+
+    }
+    break;
+
+    //超紧急情况，需要帮助，不能有闪失
+    case APP_MESSAGE_HELP:{
+        if (!WiFi.isConnected()){
+            Serial.println("wifi未连接");
+            return false;
+            //重新将事件放入队列
+//            this->send_to("Mood",CTRL_NAME,APP_MESSAGE_HELP,NULL,NULL);
+
+        }
+
+        if (WiFi.isConnected() && mqtt->client.connected()) {
+            Serial.println("发送属性上报");
+            mqtt->client.publish(topic_Properties_Up, R"({"type":"help"})");
+        } else {
+            Serial.println("mqtt未连接");
+            return false;
+//            this->send_to("Mood",CTRL_NAME,APP_MESSAGE_HELP,NULL,NULL);
+        }
+
+        //设置LED灯为蓝色频闪
+        // 恢复RGB灯  HSV色彩模式
+        RgbConfig *cfg = &rgb_cfg;
+        RgbParam rgb_setting = {LED_MODE_RGB,
+                                1, 1, 1,
+                                2, 2, 255,
+                                1, 0, 0,
+                                0.01, 1,
+                                0.05, cfg->time};
+        set_rgb_and_run(&rgb_setting);
+
+
+
 
     }
     break;
